@@ -1,6 +1,6 @@
 // API Client for MySQL backend
-// Use environment variable or default to proxy path in dev, or relative path in production
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+// Use environment variable or default to production backend URL
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://prince-and-princess-backend.onrender.com/api";
 
 // Helper function for API calls
 async function apiCall<T>(
@@ -174,6 +174,11 @@ export const authApi = {
       body: JSON.stringify({ email, password }),
     });
   },
+};
+
+// Homepage API
+export const homepageApi = {
+  getHighlights: () => apiCall<{ featuredProducts: any[]; specialSlides: any[] }>("/homepage/highlights"),
 };
 
 // Customer Authentication API

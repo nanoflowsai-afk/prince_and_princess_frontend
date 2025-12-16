@@ -11,6 +11,7 @@ import { ScrollingOffersBanner } from "@/components/ScrollingOffersBanner";
 import { LoginModal } from "@/components/LoginModal";
 import { FeaturedProducts } from "@/components/FeaturedProducts";
 import { useToast } from "@/hooks/use-toast";
+import { homepageApi } from "@/lib/api";
 import {
   Carousel,
   CarouselContent,
@@ -147,19 +148,19 @@ export default function Home() {
   useEffect(() => {
     const fetchHighlights = async () => {
       try {
-        const response = await fetch("/api/homepage/highlights");
-        if (response.ok) {
-          const data = await response.json();
-          // Ensure highlights is always an array
-          // If API returns an object, extract array or use empty array
-          if (Array.isArray(data)) {
-            setHighlights(data);
-          } else if (data.highlights && Array.isArray(data.highlights)) {
-            setHighlights(data.highlights);
-          } else {
-            // If API returns object with other structure, default to empty array
-            setHighlights([]);
-          }
+        const data = await homepageApi.getHighlights();
+        // Ensure highlights is always an array
+        // If API returns an object, extract array or use empty array
+        if (Array.isArray(data)) {
+          setHighlights(data);
+        } else if (data.highlights && Array.isArray(data.highlights)) {
+          setHighlights(data.highlights);
+        } else if (data.featuredProducts && Array.isArray(data.featuredProducts)) {
+          // Use featuredProducts if available
+          setHighlights(data.featuredProducts);
+        } else {
+          // If API returns object with other structure, default to empty array
+          setHighlights([]);
         }
       } catch (error) {
         console.error("Failed to fetch highlights:", error);

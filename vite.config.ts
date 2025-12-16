@@ -46,12 +46,22 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
-    proxy: {
-      "/api": {
-        target: process.env.VITE_BACKEND_URL || "http://localhost:3000",
-        changeOrigin: true,
-        secure: false,
-      },
-    },
+    // Only proxy if using local backend, not production
+    // When VITE_API_BASE_URL points to production, disable proxy
+    proxy: (() => {
+      const apiBase = process.env.VITE_API_BASE_URL || "";
+      // If API_BASE is set and points to production (not localhost), don't proxy
+      if (apiBase && !apiBase.includes('localhost') && !apiBase.includes('127.0.0.1')) {
+        return {}; // Empty proxy config
+      }
+      // Otherwise, proxy to local backend
+      return {
+        "/api": {
+          target: process.env.VITE_BACKEND_URL || "http://localhost:3000",
+          changeOrigin: true,
+          secure: false,
+        },
+      };
+    })(),
   },
 });
