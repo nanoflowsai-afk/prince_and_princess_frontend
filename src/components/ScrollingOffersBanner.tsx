@@ -6,6 +6,7 @@ interface OfferBanner {
   id: number;
   text: string;
   link?: string;
+  image_url?: string | null;
 }
 
 interface ScrollingOffersBannerProps {
@@ -26,6 +27,13 @@ export function ScrollingOffersBanner({ offers }: ScrollingOffersBannerProps) {
             key={`${offer.id}-${index}`}
             className="flex items-center gap-4 px-8 flex-shrink-0"
           >
+            {offer.image_url && (
+              <img
+                src={offer.image_url}
+                alt={offer.text}
+                className="w-8 h-8 rounded-full object-cover border border-white/60 shadow-sm"
+              />
+            )}
             <span className="text-sm font-medium">{offer.text}</span>
             {offer.link && (
               <a

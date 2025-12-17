@@ -21,6 +21,7 @@ import UserInvoice from "@/pages/user-invoice";
 import UserOrders from "@/pages/user-orders";
 import OrderTracking from "@/pages/OrderTracking";
 import Home from "@/pages/Home";
+import HighlightsPage from "@/pages/highlights";
 import ProductsPage from "@/pages/products";
 import ProductDetail from "@/pages/ProductDetail";
 import Cart from "@/pages/Cart";
@@ -30,17 +31,23 @@ import Contact from "@/pages/Contact";
 import { useEffect } from "react";
 
 function ProtectedRoute({ component: Component, ...rest }: { component: any; [key: string]: any }) {
-  const { isAuthenticated } = useStore();
-  return isAuthenticated ? <Component {...rest} /> : <Login />;
+  const { isAuthenticated, isAdmin } = useStore();
+  if (!isAuthenticated) return <Login />;
+  if (!isAdmin) return <div className="p-6 text-center text-red-600 font-semibold">Unauthorized Access</div>;
+  return <Component {...rest} />;
 }
 
+const UnauthorizedPage = () => (
+  <div className="p-6 text-center text-red-600 font-semibold">Unauthorized Access</div>
+);
+
 function Router() {
-  const { isAuthenticated } = useStore();
+  const { isAuthenticated, isAdmin } = useStore();
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    // Redirect root to frontend shop only if not authenticated
-    if (location === "/" && !isAuthenticated) {
+    // Redirect root to shop for all visitors
+    if (location === "/") {
       setLocation("/shop");
     }
   }, [location, setLocation, isAuthenticated]);
@@ -63,13 +70,45 @@ function Router() {
       
       {/* Login Route */}
       <Route path="/login">
-        {isAuthenticated ? <Dashboard /> : <Login />}
+        {isAuthenticated && isAdmin ? <Dashboard /> : isAuthenticated && !isAdmin ? <UnauthorizedPage /> : <Login />}
       </Route>
       
-      {/* Admin Routes (Protected) - Dashboard at root when authenticated */}
-      <Route path="/">
-        {isAuthenticated ? <Dashboard /> : <Home />}
+      {/* Admin Routes (Protected) */}
+      <Route path="/admin">
+        <ProtectedRoute component={Dashboard} />
       </Route>
+      <Route path="/admin/products">
+        <ProtectedRoute component={Products} />
+      </Route>
+      <Route path="/admin/slides">
+        <ProtectedRoute component={Slides} />
+      </Route>
+      <Route path="/admin/highlights">
+        <ProtectedRoute component={HighlightsPage} />
+      </Route>
+      <Route path="/admin/offers">
+        <ProtectedRoute component={Offers} />
+      </Route>
+      <Route path="/admin/reviews">
+        <ProtectedRoute component={Reviews} />
+      </Route>
+      <Route path="/admin/users">
+        <ProtectedRoute component={Users} />
+      </Route>
+      <Route path="/admin/invoices">
+        <ProtectedRoute component={AdminInvoices} />
+      </Route>
+      <Route path="/admin/orders">
+        <ProtectedRoute component={AdminOrders} />
+      </Route>
+      <Route path="/admin/payments">
+        <ProtectedRoute component={Payments} />
+      </Route>
+      <Route path="/admin/settings">
+        <ProtectedRoute component={Settings} />
+      </Route>
+      
+      {/* Backward-compatible admin paths */}
       <Route path="/products">
         <ProtectedRoute component={Products} />
       </Route>
@@ -84,12 +123,6 @@ function Router() {
       </Route>
       <Route path="/users">
         <ProtectedRoute component={Users} />
-      </Route>
-      <Route path="/admin/invoices">
-        <ProtectedRoute component={AdminInvoices} />
-      </Route>
-      <Route path="/admin/orders">
-        <ProtectedRoute component={AdminOrders} />
       </Route>
       <Route path="/payments">
         <ProtectedRoute component={Payments} />

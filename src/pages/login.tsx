@@ -13,7 +13,7 @@ import { useTheme } from "next-themes";
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { login } = useStore();
+  const { login, adminLogin } = useStore();
   const { theme, setTheme } = useTheme();
   const [email, setEmail] = useState("admin@prince.com");
   const [password, setPassword] = useState("Admin@123");
@@ -46,27 +46,26 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      const { authApi } = await import("@/lib/api");
       console.log("🔐 [ADMIN LOGIN PAGE] Attempting admin login with:", email);
-      console.log("📡 [ADMIN LOGIN PAGE] API Base URL:", import.meta.env.VITE_API_BASE_URL || "/api");
-      console.log("📡 [ADMIN LOGIN PAGE] Will call: /api/auth/login (NOT /api/customer/login)");
-      console.log("📡 [ADMIN LOGIN PAGE] This queries 'users' table (NOT 'customers' table)");
-      
-      const response = await authApi.login(email.trim(), password);
+      console.log("📡 [ADMIN LOGIN PAGE] Using admin login route against users table");
+      const response = await adminLogin(email.trim(), password);
       console.log("✅ [ADMIN LOGIN PAGE] Login response received:", response);
 
       if (response && response.success && response.user) {
+        if ((response.user.role || "").toLowerCase() !== "admin") {
+          throw new Error("Unauthorized Access - admin role required");
+        }
         console.log("✅ Login successful, setting authentication state...");
         // Use the login function from store to persist authentication
-        login();
+        login(response.user);
         console.log("✅ Authentication state set, redirecting...");
         toast({
           title: "✅ Login Successful!",
           description: `Welcome back, ${response.user.name || response.user.email}! Redirecting to dashboard...`,
         });
         setTimeout(() => {
-          setLocation("/");
-          console.log("✅ Redirected to dashboard");
+          setLocation("/admin");
+          console.log("✅ Redirected to admin dashboard");
         }, 800);
       } else {
         console.error("❌ Login failed - invalid response:", response);

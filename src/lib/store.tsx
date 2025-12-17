@@ -106,6 +106,8 @@ interface StoreState {
   };
   categories: string[];
   isAuthenticated: boolean;
+  admin: any | null;
+  isAdmin: boolean;
   customer: Customer | null;
   isCustomerAuthenticated: boolean;
   cart: CartItem[];
@@ -119,7 +121,8 @@ interface StoreState {
 }
 
 interface StoreContextType extends StoreState {
-  login: () => void;
+  login: (user?: any) => void;
+  adminLogin: (email: string, password: string) => Promise<any>;
   logout: () => void;
   customerLogin: (email: string, password: string) => Promise<void>;
   customerRegister: (email: string, password: string, name: string, phone?: string) => Promise<void>;
@@ -172,6 +175,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem("isAuthenticated");
     return stored === "true";
   });
+  const [admin, setAdmin] = useState<any | null>(() => {
+    const stored = localStorage.getItem("admin");
+    return stored ? JSON.parse(stored) : null;
+  });
+  const isAdmin = !!admin && (admin.role || "").toLowerCase() === "admin";
   
   // Default settings (will be loaded from DB)
   const [settings, setSettings] = useState<StoreState["settings"]>({
@@ -399,11 +407,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       
       if (response.success && response.user) {
         setIsAuthenticated(true);
-        // Store admin user info
-        if (response.user) {
-          localStorage.setItem("admin", JSON.stringify(response.user));
-          localStorage.setItem("isAuthenticated", "true");
-        }
+        setAdmin(response.user);
+        localStorage.setItem("admin", JSON.stringify(response.user));
+        localStorage.setItem("isAuthenticated", "true");
         return response;
       } else {
         throw new Error(response.message || "Login failed");
@@ -415,13 +421,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   // Actions
-  const login = () => {
+  const login = (user?: any) => {
     setIsAuthenticated(true);
     localStorage.setItem("isAuthenticated", "true");
+    if (user) {
+      setAdmin(user);
+      localStorage.setItem("admin", JSON.stringify(user));
+    }
   };
   
   const logout = () => {
     setIsAuthenticated(false);
+    setAdmin(null);
     localStorage.removeItem("isAuthenticated");
     localStorage.removeItem("admin");
   };
@@ -1172,6 +1183,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       settings,
       categories,
       isAuthenticated,
+      admin,
+      isAdmin,
       customer,
       isCustomerAuthenticated,
       cart,
@@ -1180,6 +1193,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       orders,
       isLoading,
       login,
+      adminLogin,
       logout,
       customerLogin,
       customerRegister,

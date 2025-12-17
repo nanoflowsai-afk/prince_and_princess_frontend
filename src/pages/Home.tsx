@@ -11,7 +11,7 @@ import { ScrollingOffersBanner } from "@/components/ScrollingOffersBanner";
 import { LoginModal } from "@/components/LoginModal";
 import { FeaturedProducts } from "@/components/FeaturedProducts";
 import { useToast } from "@/hooks/use-toast";
-import { homepageApi } from "@/lib/api";
+import { homepageApi, offersApi } from "@/lib/api";
 import {
   Carousel,
   CarouselContent,
@@ -24,8 +24,6 @@ import {
 // Mock offers for banner
 const MOCK_OFFERS = [
   { id: 1, text: "World Wide Shipping Available", link: "/shop/products" },
-  { id: 2, text: "Free Shipping for all orders over ₹500", link: "/shop/products" },
-  { id: 3, text: "Explore our most loved collection for your most loved little ones", link: "/shop/products" },
 ];
 
 export default function Home() {
@@ -38,6 +36,7 @@ export default function Home() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingCartItem, setPendingCartItem] = useState<{ productId: number; quantity: number; size: string; color: string } | null>(null);
   const [highlights, setHighlights] = useState<any[]>([]);
+  const [offers, setOffers] = useState<{ id: number; text: string; link?: string; image_url?: string | null }[]>([]);
 
   // Use categories from admin/store only to avoid showing deleted/inactive categories
   const displayCategories = useMemo(() => {
@@ -171,6 +170,31 @@ export default function Home() {
     fetchHighlights();
   }, []);
 
+  // Fetch offers for top banner
+  useEffect(() => {
+    const fetchOffers = async () => {
+      try {
+        const data = await offersApi.getAll();
+        const activeOffers = (Array.isArray(data) ? data : [])
+          .filter((o: any) => o.is_active === 1 || o.is_active === true)
+          .map((o: any) => ({
+            id: o.id,
+            text: o.title || o.description || "",
+            link: "/shop/products",
+            image_url: o.image_url || null,
+          }))
+          .filter((o: any) => o.text && o.text.trim() !== "");
+
+        setOffers(activeOffers.length > 0 ? activeOffers : MOCK_OFFERS);
+      } catch {
+        // On error, fall back to default mock offers
+        setOffers(MOCK_OFFERS);
+      }
+    };
+
+    fetchOffers();
+  }, []);
+
   const handleAddToCart = (product: any, e: React.MouseEvent) => {
     e.stopPropagation();
 
@@ -248,7 +272,7 @@ export default function Home() {
 
   const features = (Array.isArray(highlights) ? highlights : []).map((highlight, index) => {
     let IconComponent = Truck; // default
-    if (highlight.icon_type === "icon" && highlight.icon_value) {
+    if (highlight.icon_value) {
       const iconMap: { [key: string]: any } = {
         "Truck": Truck,
         "Shield": Shield,
@@ -274,7 +298,7 @@ export default function Home() {
       icon: IconComponent,
       title: highlight.title,
       description: highlight.subtitle || "",
-      image: highlight.icon_type === "image" ? highlight.image_url : null,
+      image: highlight.image_url || null,
       color: colors[index % colors.length]
     };
   });
@@ -283,7 +307,7 @@ export default function Home() {
     <FrontendLayout
       topBanner={
         <div className="sticky top-0 z-50">
-          <ScrollingOffersBanner offers={MOCK_OFFERS} />
+          <ScrollingOffersBanner offers={offers} />
         </div>
       }
     >
@@ -405,23 +429,29 @@ export default function Home() {
               >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between gap-4">
-                    {/* Left side - Icon/Image and Text */}
+                    {/* Left side - Icon and Text */}
                     <div className="flex-1">
                       <div className={`w-14 h-14 mb-4 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
-                        {feature.image ? (
-                          <img src={feature.image} alt={feature.title} className="w-7 h-7 object-cover rounded" />
-                        ) : (
-                          <feature.icon className="w-7 h-7 text-white" />
-                        )}
+                        <feature.icon className="w-7 h-7 text-white" />
                       </div>
                       <h3 className="font-display font-bold text-lg mb-2 text-foreground">{feature.title}</h3>
                       <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
                     </div>
-                    {/* Right side - Decorative element */}
+                    {/* Right side - Image (if provided) or decorative element */}
                     <div className="flex-shrink-0">
-                      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center transform group-hover:scale-125 group-hover:rotate-12 transition-all duration-300">
-                        <div className="w-6 h-6 bg-primary/20 rounded-full"></div>
-                      </div>
+                      {feature.image ? (
+                        <div className="w-16 h-16 rounded-2xl overflow-hidden border border-primary/20 shadow-md transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                          <img
+                            src={feature.image}
+                            alt={`${feature.title} visual`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center transform group-hover:scale-125 group-hover:rotate-12 transition-all duration-300">
+                          <div className="w-6 h-6 bg-primary/20 rounded-full"></div>
+                        </div>
+                      )}
                     </div>
                   </div>
                   {/* Decorative elements */}

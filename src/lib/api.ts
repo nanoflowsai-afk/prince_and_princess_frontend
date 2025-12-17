@@ -1,6 +1,10 @@
 // API Client for MySQL backend
-// Use environment variable or default to production backend URL
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://prince-and-princess-backend.onrender.com/api";
+// Use localhost in development (when running from localhost), otherwise fall back to env/production URL
+const API_BASE =
+  (typeof window !== "undefined" && window.location.hostname === "localhost"
+    ? "http://localhost:3000/api"
+    : import.meta.env.VITE_API_BASE_URL) ||
+  "https://prince-and-princess-backend.onrender.com/api";
 
 // Helper function for API calls
 async function apiCall<T>(
@@ -178,7 +182,26 @@ export const authApi = {
 
 // Homepage API
 export const homepageApi = {
-  getHighlights: () => apiCall<{ featuredProducts: any[]; specialSlides: any[] }>("/homepage/highlights"),
+  getHighlights: () => apiCall<any[]>("/homepage/highlights"),
+};
+
+// Offers API (admin + homepage)
+export const offersApi = {
+  getAll: () => apiCall<any[]>("/offers"),
+  create: (offer: any) =>
+    apiCall<any>("/offers", {
+      method: "POST",
+      body: JSON.stringify(offer),
+    }),
+  update: (id: number, offer: any) =>
+    apiCall<any>(`/offers/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(offer),
+    }),
+  delete: (id: number) =>
+    apiCall<{ message: string }>(`/offers/${id}`, {
+      method: "DELETE",
+    }),
 };
 
 // Customer Authentication API
@@ -222,6 +245,25 @@ export const paymentsApi = {
         body: JSON.stringify(paymentData),
       }
     ),
+};
+
+// Admin Homepage Highlights API
+export const homepageHighlightsApi = {
+  getAll: () => apiCall<any[]>("/homepage/highlights"),
+  create: (highlight: any) =>
+    apiCall<any>("/homepage/highlights", {
+      method: "POST",
+      body: JSON.stringify(highlight),
+    }),
+  update: (id: number, highlight: any) =>
+    apiCall<any>(`/homepage/highlights/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(highlight),
+    }),
+  delete: (id: number) =>
+    apiCall<{ message: string }>(`/homepage/highlights/${id}`, {
+      method: "DELETE",
+    }),
 };
 
 // Orders API
